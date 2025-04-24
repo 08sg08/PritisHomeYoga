@@ -1,11 +1,7 @@
 function toggleAddress() {
     const mode = document.getElementById("mode").value;
     const addressField = document.getElementById("addressField");
-    if (mode === "Offline") {
-        addressField.style.display = "block";
-    } else {
-        addressField.style.display = "none";
-    }
+    addressField.style.display = mode === "Offline" ? "block" : "none";
 }
 
 function goToPage2() {
@@ -20,111 +16,123 @@ function goToPage2() {
     const mobileRegex = /^(\+\d{1,3})?\d{10}$/;
 
     if (!nameRegex.test(name)) {
-        alert("Please enter a valid name (only letters, min 2 characters).");
+        alert("Please enter a valid name (min 2 letters, only alphabets).");
         return;
     }
 
     if (!mobileRegex.test(mobile)) {
-        alert("Please enter a valid mobile number (10 digits or with +country code).");
+        alert("Please enter a valid mobile number (10 digits or +country code).");
         return;
     }
 
-    if (!mode || !people || (mode === "Offline" && (!address || address.length < 2))) {
-        alert("Please fill in all required fields.");
+    if (!mode) {
+        alert("Please select your preferred mode.");
         return;
     }
 
+    if (!people || parseInt(people) <= 0) {
+        alert("Please enter number of people.");
+        return;
+    }
+
+    if (mode === "Offline" && (!address || address.length < 2)) {
+        alert("Please enter a valid address.");
+        return;
+    }
+
+    // Enable DOB only if email is valid
+    const emailInput = document.getElementById("email");
+    const email = emailInput.value.trim();
+    const dob = document.getElementById("dob");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    dob.disabled = !emailRegex.test(email);
+
+    // Show Page 2
     form.style.display = "none";
     document.getElementById("page2").style.display = "block";
 
-    // Enable DOB field based on email validity
-    const email = document.getElementById("email").value.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const dob = document.getElementById("dob");
-    dob.disabled = !emailRegex.test(email);
-
-    limitDaysSelection(); // Ensure day limit is respected on page load
+    // Reset days
+    resetDays();
+    limitDaysSelection();
 }
 
-document.getElementById("mobile").addEventListener("input", function () {
-    const mobile = this.value.trim();
-    const modeSelect = document.getElementById("mode");
-    if (mobile.startsWith("+") && !mobile.startsWith("+91")) {
-        modeSelect.value = "Online";
-        modeSelect.disabled = true;
-        toggleAddress();
-    } else {
-        modeSelect.disabled = false;
-    }
-});
-
-// Email validation: enable/disable DOB field live
+// Email validation for DOB
 document.getElementById("email").addEventListener("input", function () {
     const dob = document.getElementById("dob");
-    const email = this.value.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    dob.disabled = !emailRegex.test(email);
+    dob.disabled = !emailRegex.test(this.value.trim());
 });
 
-// DOB minimum age check (18+)
+// Age validation
 document.getElementById("dob").addEventListener("change", function () {
     const dob = new Date(this.value);
     const today = new Date();
     let age = today.getFullYear() - dob.getFullYear();
     const m = today.getMonth() - dob.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-        age--;
-    }
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
     if (age < 18) {
-        alert("You must be at least 18 years old to register.");
+        alert("You must be at least 18 years old.");
         this.value = "";
     }
 });
 
-// Allow only numbers 1–6 in classesPerWeek and reset day checkboxes
-document.getElementById("classesPerWeek").addEventListener("input", function () {
-    let value = parseInt(this.value);
-    if (value < 1) this.value = 1;
-    if (value > 6) this.value = 6;
-
-    // Reset checkboxes
-    const checkboxes = document.querySelectorAll("input[type='checkbox'][name='days']");
+// Reset and re-enable all days
+function resetDays() {
+    const checkboxes = document.querySelectorAll("input[name='days']");
     checkboxes.forEach(cb => {
         cb.checked = false;
         cb.disabled = false;
     });
+}
 
-    limitDaysSelection();
-});
-
-// Reset also on focus (fail-safe)
-document.getElementById("classesPerWeek").addEventListener("focus", function () {
-    const checkboxes = document.querySelectorAll("input[type='checkbox'][name='days']");
-    checkboxes.forEach(cb => {
-        cb.checked = false;
-        cb.disabled = false;
-    });
-});
-
-// Limit day selection according to classesPerWeek
+// Limit days based on classes per week
 function limitDaysSelection() {
     const maxDays = parseInt(document.getElementById("classesPerWeek").value) || 0;
-    const checkboxes = document.querySelectorAll("input[type='checkbox'][name='days']");
+    const checkboxes = document.querySelectorAll("input[name='days']");
     const selected = Array.from(checkboxes).filter(cb => cb.checked).length;
-
     checkboxes.forEach(cb => {
         cb.disabled = !cb.checked && selected >= maxDays;
     });
 }
 
-// Re-run limit check on every checkbox change
-document.querySelectorAll("input[type='checkbox'][name='days']").forEach(cb => {
+// Reset day checkboxes if class number changes
+document.getElementById("classesPerWeek").addEventListener("input", function () {
+    let value = parseInt(this.value);
+    if (value < 1) value = 1;
+    if (value > 6) value = 6;
+    this.value = value;
+    resetDays();
+    limitDaysSelection();
+});
+
+// Enforce number-only input in classesPerWeek
+document.getElementById("classesPerWeek").addEventListener("keypress", function (e) {
+    if (!/[0-9]/.test(e.key)) {
+        e.preventDefault();
+    }
+});
+
+// Re-check on checkbox click
+document.querySelectorAll("input[name='days']").forEach(cb => {
     cb.addEventListener("change", limitDaysSelection);
 });
 
-// Final form submit
+// Auto-select Online mode for international numbers
+document.getElementById("mobile").addEventListener("input", function () {
+    const value = this.value.trim();
+    const mode = document.getElementById("mode");
+    if (value.startsWith("+") && !value.startsWith("+91")) {
+        mode.value = "Online";
+        mode.disabled = true;
+        toggleAddress();
+    } else {
+        mode.disabled = false;
+    }
+});
+
+// Submit form and show thank you message
 document.getElementById("enquiryForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    document.getElementById("enquiryForm").style.display = "none";
+    document.getElementById("page2").style.display = "none";
     document.getElementById("thankYouMessage").style.display = "block";
 });
