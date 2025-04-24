@@ -15,17 +15,12 @@ function goToPage2() {
     const mode = document.getElementById("mode").value;
     const people = document.getElementById("people").value.trim();
     const address = document.getElementById("address").value.trim();
-    if (!emailRegex.test(email)) {
-    alert("Please enter a valid email address.");
-    return;
-}
 
     const nameRegex = /^[a-zA-Z ]{2,}$/;
     const mobileRegex = /^(\+\d{1,3})?\d{10}$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!nameRegex.test(name)) {
-        alert("Please enter a valid name (only letters, minimum 2 characters).");
+        alert("Please enter a valid name (only letters, min 2 characters).");
         return;
     }
 
@@ -34,30 +29,35 @@ function goToPage2() {
         return;
     }
 
-    if (!emailRegex.test(email)) {
-        alert("Please enter a valid email address.");
-        return;
-    }
-
-    if (!name || !mobile || !mode || !people || (mode === "Offline" && (!address || address.length < 2))) {
+    if (!mode || !people || (mode === "Offline" && (!address || address.length < 2))) {
         alert("Please fill in all required fields.");
         return;
     }
 
-    form.style.display = "none";
-    const email = document.getElementById("email").value.trim();
-if (!emailRegex.test(email)) {
-    alert("Please enter a valid email address.");
-    document.getElementById("page2").style.display = "none";
-    form.style.display = "block";
-    return;
-}
-document.getElementById("dob").disabled = false;
-
+    document.getElementById("page1").style.display = "none";
     document.getElementById("page2").style.display = "block";
     document.getElementById("dob").disabled = false;
 }
 
+// Automatically force Online mode for non-Indian numbers
+document.getElementById("mobile").addEventListener("input", function () {
+    const mobile = this.value.trim();
+    const modeSelect = document.getElementById("mode");
+    if (mobile.startsWith("+") && !mobile.startsWith("+91")) {
+        modeSelect.value = "Online";
+        modeSelect.disabled = true;
+        toggleAddress();
+    } else {
+        modeSelect.disabled = false;
+    }
+});
+
+// Restrict classes per week to numbers only
+document.getElementById("classesPerWeek").addEventListener("input", function () {
+    this.value = this.value.replace(/[^0-9]/g, "");
+});
+
+// Restrict number of selected days
 function limitDaysSelection() {
     const maxDays = parseInt(document.getElementById("classesPerWeek").value) || 0;
     const checkboxes = document.querySelectorAll("input[type='checkbox'][name='days']");
@@ -70,25 +70,19 @@ function limitDaysSelection() {
     }
 }
 
-// Restrict mode for international numbers
-document.getElementById("mobile").addEventListener("input", function () {
-    const mobile = this.value.trim();
-    const modeSelect = document.getElementById("mode");
-    if (mobile.startsWith("+") && !mobile.startsWith("+91")) {
-        modeSelect.value = "Online";
-        modeSelect.disabled = true;
-        toggleAddress(); 
+// Email and DOB validation
+document.getElementById("dob").addEventListener("focus", function () {
+    const email = document.getElementById("email").value.trim();
+    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+    if (!emailRegex.test(email)) {
+        alert("Please enter a valid email address before selecting DOB.");
+        this.disabled = true;
+        return;
     } else {
-        modeSelect.disabled = false;
+        this.disabled = false;
     }
 });
 
-// Only allow numbers in classes/week
-document.getElementById("classesPerWeek").addEventListener("input", function () {
-    this.value = this.value.replace(/[^0-9]/g, "");
-});
-
-// Check if age is at least 18
 document.getElementById("dob").addEventListener("change", function () {
     const dob = new Date(this.value);
     const today = new Date();
@@ -103,6 +97,7 @@ document.getElementById("dob").addEventListener("change", function () {
     }
 });
 
+// Final submission logic
 document.getElementById("enquiryForm").addEventListener("submit", function (e) {
     e.preventDefault();
     document.getElementById("enquiryForm").style.display = "none";
