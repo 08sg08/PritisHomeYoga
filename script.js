@@ -15,7 +15,10 @@ function goToPage2() {
     const mode = document.getElementById("mode").value;
     const people = document.getElementById("people").value.trim();
     const address = document.getElementById("address").value.trim();
-    const email = document.getElementById("email").value.trim();
+    if (!emailRegex.test(email)) {
+    alert("Please enter a valid email address.");
+    return;
+}
 
     const nameRegex = /^[a-zA-Z ]{2,}$/;
     const mobileRegex = /^(\+\d{1,3})?\d{10}$/;
@@ -42,6 +45,15 @@ function goToPage2() {
     }
 
     form.style.display = "none";
+    const email = document.getElementById("email").value.trim();
+if (!emailRegex.test(email)) {
+    alert("Please enter a valid email address.");
+    document.getElementById("page2").style.display = "none";
+    form.style.display = "block";
+    return;
+}
+document.getElementById("dob").disabled = false;
+
     document.getElementById("page2").style.display = "block";
     document.getElementById("dob").disabled = false;
 }
