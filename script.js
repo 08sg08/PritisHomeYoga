@@ -36,10 +36,8 @@ function goToPage2() {
 
     document.getElementById("page1").style.display = "none";
     document.getElementById("page2").style.display = "block";
-    document.getElementById("dob").disabled = false;
 }
 
-// Automatically force Online mode for non-Indian numbers
 document.getElementById("mobile").addEventListener("input", function () {
     const mobile = this.value.trim();
     const modeSelect = document.getElementById("mode");
@@ -52,37 +50,47 @@ document.getElementById("mobile").addEventListener("input", function () {
     }
 });
 
-// Restrict classes per week to numbers only
+// Classes per week: allow only 1-6, reset checkboxes
 document.getElementById("classesPerWeek").addEventListener("input", function () {
-    this.value = this.value.replace(/[^0-9]/g, "");
+    let value = parseInt(this.value);
+    if (value < 1) this.value = 1;
+    if (value > 6) this.value = 6;
+
+    const checkboxes = document.querySelectorAll("input[type='checkbox'][name='days']");
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        cb.disabled = false;
+    });
 });
 
-// Restrict number of selected days
+// Reset checkboxes again on focus (fail-safe)
+document.getElementById("classesPerWeek").addEventListener("focus", function () {
+    const checkboxes = document.querySelectorAll("input[type='checkbox'][name='days']");
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        cb.disabled = false;
+    });
+});
+
+// Limit days selected
 function limitDaysSelection() {
     const maxDays = parseInt(document.getElementById("classesPerWeek").value) || 0;
     const checkboxes = document.querySelectorAll("input[type='checkbox'][name='days']");
-    checkboxes.forEach(cb => cb.disabled = false);
     const selected = Array.from(checkboxes).filter(cb => cb.checked).length;
-    if (selected >= maxDays) {
-        checkboxes.forEach(cb => {
-            if (!cb.checked) cb.disabled = true;
-        });
-    }
+    checkboxes.forEach(cb => {
+        cb.disabled = !cb.checked && selected >= maxDays;
+    });
 }
 
-// Email and DOB validation
-document.getElementById("dob").addEventListener("focus", function () {
-    const email = document.getElementById("email").value.trim();
-    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-    if (!emailRegex.test(email)) {
-        alert("Please enter a valid email address before selecting DOB.");
-        this.disabled = true;
-        return;
-    } else {
-        this.disabled = false;
-    }
+// Email validation controls DOB field live
+document.getElementById("email").addEventListener("input", function () {
+    const dob = document.getElementById("dob");
+    const email = this.value.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    dob.disabled = !emailRegex.test(email);
 });
 
+// DOB age validation
 document.getElementById("dob").addEventListener("change", function () {
     const dob = new Date(this.value);
     const today = new Date();
@@ -97,7 +105,7 @@ document.getElementById("dob").addEventListener("change", function () {
     }
 });
 
-// Final submission logic
+// Final submit handler
 document.getElementById("enquiryForm").addEventListener("submit", function (e) {
     e.preventDefault();
     document.getElementById("enquiryForm").style.display = "none";
