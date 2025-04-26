@@ -1,99 +1,130 @@
-function toggleAddress() {
-  const mode = document.getElementById("mode").value;
-  const addressField = document.getElementById("addressField");
-  addressField.style.display = mode === "Offline" ? "block" : "none";
-}
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("enquiryForm");
+    const page1 = document.getElementById("page1");
+    const page2 = document.getElementById("page2");
+    const thankyouMessage = document.getElementById("message");
 
-function goToPage2() {
-  const name = document.getElementById("name").value.trim();
-  const mobile = document.getElementById("mobile").value.trim();
-  const mode = document.getElementById("mode").value;
-  const people = document.getElementById("people").value.trim();
-  const address = document.getElementById("address").value.trim();
-
-  const nameValid = name.length >= 2 && /^[a-zA-Z\s]+$/.test(name);
-  const mobileValid = /^(\+?\d{1,4})?\d{10}$/.test(mobile);
-
-  if (!nameValid || !mobileValid || !mode || !people || (mode === "Offline" && address.length < 2)) {
-    alert("Please fill in all required fields correctly.");
-    return;
-  }
-
-  // Auto-select Online mode if outside India
-  if (mobile.startsWith("+") && !mobile.startsWith("+91")) {
+    const nameField = document.getElementById("name");
+    const mobileField = document.getElementById("mobile");
+    const emailField = document.getElementById("email");
     const modeSelect = document.getElementById("mode");
-    modeSelect.value = "Online";
-    modeSelect.disabled = true;
-    toggleAddress();
-  } else {
-    document.getElementById("mode").disabled = false;
-  }
+    const addressFieldWrapper = document.getElementById("addressField");
+    const addressField = document.getElementById("address");
+    const dobField = document.getElementById("dob");
+    const classesPerWeekField = document.getElementById("classesPerWeek");
+    const daysCheckboxes = document.querySelectorAll("input[name='days']");
 
-  document.getElementById("page1").style.display = "none";
-  document.getElementById("page2").style.display = "block";
-}
+    function validateEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
 
-// Reset days when class count changes
-function resetDaySelection() {
-  const checkboxes = document.querySelectorAll("input[name='days']");
-  checkboxes.forEach(cb => {
-    cb.checked = false;
-    cb.disabled = false;
-  });
-  limitDaysSelection();
-}
+    function resetDaysSelection() {
+        daysCheckboxes.forEach(cb => {
+            cb.checked = false;
+            cb.disabled = false;
+        });
+    }
 
-// Limit number of days based on selected value
-function limitDaysSelection() {
-  const maxDays = parseInt(document.getElementById("classesPerWeek").value) || 0;
-  const checkboxes = document.querySelectorAll("input[name='days']");
-  const selected = document.querySelectorAll("input[name='days']:checked").length;
+    emailField.addEventListener("input", function () {
+        if (validateEmail(this.value)) {
+            dobField.disabled = false;
+        } else {
+            dobField.disabled = true;
+            dobField.value = "";
+        }
+    });
 
-  checkboxes.forEach(cb => {
-    cb.disabled = !cb.checked && selected >= maxDays;
-  });
-}
+    dobField.addEventListener("change", function () {
+        const dob = new Date(this.value);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        if (age < 18) {
+            alert("You must be at least 18 years old to register.");
+            this.value = "";
+        }
+    });
 
-// Mobile-compatible checkbox control
-const checkboxes = document.querySelectorAll("input[name='days']");
-checkboxes.forEach(cb => {
-  cb.addEventListener("change", limitDaysSelection);
-  cb.addEventListener("click", () => setTimeout(limitDaysSelection, 50));
-});
+    classesPerWeekField.addEventListener("input", function () {
+        let val = parseInt(this.value, 10);
+        if (val < 1 || val > 6) {
+            this.value = "";
+        }
+        resetDaysSelection();
+    });
 
-// Only numbers allowed in "Classes per Week" field and restrict to 1–6
-document.getElementById("classesPerWeek").addEventListener("input", function () {
-  let value = this.value.replace(/[^0-9]/g, "");
-  value = Math.max(1, Math.min(6, parseInt(value) || 1));
-  this.value = value;
-  resetDaySelection();
-});
+    daysCheckboxes.forEach(cb => {
+        cb.addEventListener("change", function () {
+            const max = parseInt(classesPerWeekField.value, 10) || 0;
+            const selected = [...daysCheckboxes].filter(c => c.checked);
+            if (selected.length > max) {
+                this.checked = false;
+                alert(`You can only select up to ${max} day(s).`);
+            }
+        });
+    });
 
-// Allow DOB input only after valid email and ensure age >= 18
-document.getElementById("email").addEventListener("input", function () {
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value.trim());
-  document.getElementById("dob").disabled = !emailValid;
-});
+    mobileField.addEventListener("input", function () {
+        const val = this.value;
+        if (!/^[+\d]*$/.test(val)) {
+            this.value = val.replace(/[^+\d]/g, '');
+        }
+        if (val.startsWith('+') && !val.startsWith('+91')) {
+            modeSelect.value = "Online";
+            modeSelect.disabled = true;
+            addressFieldWrapper.style.display = "none";
+        } else {
+            modeSelect.disabled = false;
+        }
+    });
 
-document.getElementById("dob").addEventListener("change", function () {
-  const dob = new Date(this.value);
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const m = today.getMonth() - dob.getMonth();
+    modeSelect.addEventListener("change", function () {
+        addressFieldWrapper.style.display = this.value === "Offline" ? "block" : "none";
+    });
 
-  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        page1.style.display = "none";
+        page2.style.display = "none";
+        thankyouMessage.style.display = "block";
+    });
 
-  if (age < 18) {
-    alert("You must be at least 18 years old to register.");
-    this.value = "";
-  }
-});
+    document.getElementById("nextButton").addEventListener("click", function () {
+        const name = nameField.value.trim();
+        const mobile = mobileField.value.trim();
+        const gender = document.getElementById("gender").value.trim();
+        const people = document.getElementById("people").value;
+        const mode = modeSelect.value;
+        const address = addressField.value.trim();
 
-// Submit form with thank-you message
-document.getElementById("enquiryForm").addEventListener("submit", function (e) {
-  e.preventDefault();
-  document.getElementById("page2").style.display = "none";
-  document.getElementById("message").style.display = "block";
+        if (name.length < 2 || !/^[a-zA-Z\s]+$/.test(name)) {
+            alert("Please enter a valid name with at least 2 characters.");
+            return;
+        }
+        if (!/^([+]\d{1,3})?\d{10}$/.test(mobile)) {
+            alert("Please enter a valid mobile number.");
+            return;
+        }
+        if (!gender) {
+            alert("Please enter your gender.");
+            return;
+        }
+        if (!people || parseInt(people, 10) < 1) {
+            alert("Please enter the number of people.");
+            return;
+        }
+        if (mode === "Offline" && address.length < 2) {
+            alert("Please enter a valid address for offline mode.");
+            return;
+        }
+        if (!validateEmail(emailField.value)) {
+            alert("Please enter a valid email address.");
+            return;
+        }
+        page1.style.display = "none";
+        page2.style.display = "block";
+    });
 });
