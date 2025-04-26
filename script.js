@@ -1,136 +1,81 @@
 function toggleAddress() {
-  const mode = document.getElementById("mode").value;
-  const addressField = document.getElementById("addressField");
-  if (mode === "Offline") {
-    addressField.style.display = "block";
-  } else {
-    addressField.style.display = "none";
-  }
+    const mode = document.getElementById('mode').value;
+    const addressField = document.getElementById('addressField');
+    addressField.style.display = (mode === 'Offline') ? "block" : "none";
 }
 
-// Limit days selection based on classes per week
+function goToPage2() {
+    const gender = document.getElementById('gender').value.trim();
+    const name = document.getElementById('name').value.trim();
+    const mobile = document.getElementById('mobile').value.trim();
+    const mode = document.getElementById('mode').value;
+    const address = document.getElementById('address').value.trim();
+    const people = document.getElementById('people').value.trim();
+
+    if (!gender || !name || !mobile || !mode || !people || (mode === "Offline" && !address)) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+
+    // Validate mobile
+    if (!/^\+?\d{10,15}$/.test(mobile)) {
+        alert('Please enter a valid mobile number.');
+        return;
+    }
+
+    const modeSelect = document.getElementById('mode');
+    if (mobile.startsWith('+') && !mobile.startsWith('+91')) {
+        modeSelect.value = 'Online';
+        modeSelect.disabled = true;
+        toggleAddress();
+    } else {
+        modeSelect.disabled = false;
+    }
+
+    document.getElementById('page1').style.display = 'none';
+    document.getElementById('page2').style.display = 'block';
+}
+
 function limitDaysSelection() {
-  const maxDays = parseInt(document.getElementById("classesPerWeek").value) || 0;
-  const checkboxes = document.querySelectorAll('input[name="days"]');
-
-  checkboxes.forEach(cb => {
-    cb.checked = false;
-    cb.disabled = false;
-  });
-
-  let selected = 0;
-  checkboxes.forEach(cb => {
-    cb.addEventListener('change', function() {
-      selected = document.querySelectorAll('input[name="days"]:checked').length;
-      checkboxes.forEach(box => {
-        if (selected >= maxDays && !box.checked) {
-          box.disabled = true;
-        } else {
-          box.disabled = false;
-        }
-      });
+    const maxDays = parseInt(document.getElementById('classesPerWeek').value) || 0;
+    const checkboxes = document.querySelectorAll('input[name="days"]');
+    let selectedCount = 0;
+    
+    checkboxes.forEach(cb => cb.disabled = false);
+    
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            selectedCount = document.querySelectorAll('input[name="days"]:checked').length;
+            checkboxes.forEach(c => c.disabled = selectedCount >= maxDays && !c.checked);
+        });
     });
-  });
 }
 
-// Restrict mode if international number
-document.getElementById("mobile").addEventListener("input", function() {
-  const mobile = this.value.trim();
-  const modeSelect = document.getElementById("mode");
-
-  if (mobile.startsWith("+") && !mobile.startsWith("+91")) {
-    modeSelect.value = "Online";
-    modeSelect.disabled = true;
-    toggleAddress(); 
-  } else {
-    modeSelect.disabled = false;
-    toggleAddress();
-  }
+document.getElementById('classesPerWeek').addEventListener('input', () => {
+    const checkboxes = document.querySelectorAll('input[name="days"]');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        cb.disabled = false;
+    });
+    limitDaysSelection();
 });
 
-// Allow only numbers and '+' in mobile field
-document.getElementById("mobile").addEventListener("input", function() {
-  this.value = this.value.replace(/[^0-9+]/g, "");
-});
+document.getElementById('enquiryForm').addEventListener('submit', function (e) {
+    e.preventDefault();
 
-// Allow only 1-6 in classes per week field
-document.getElementById("classesPerWeek").addEventListener("input", function() {
-  this.value = this.value.replace(/[^1-6]/g, "");
-  limitDaysSelection();
-});
+    const email = document.getElementById('email').value.trim();
+    const age = parseInt(document.getElementById('age').value);
 
-// Check DOB to be minimum 18 years
-document.getElementById("dob").addEventListener("change", function() {
-  const dob = new Date(this.value);
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const m = today.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-    age--;
-  }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+        alert('Please enter a valid email address.');
+        return;
+    }
 
-  if (age < 18) {
-    alert("You must be at least 18 years old to register.");
-    this.value = "";
-  }
-});
+    if (isNaN(age) || age < 18) {
+        alert('You must be at least 18 years old to register.');
+        return;
+    }
 
-// Validate email pattern
-function validateEmail(email) {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
-
-// NEXT Button (Page 1)
-document.getElementById('nextButton').addEventListener('click', function() {
-  const gender = document.getElementById('gender').value.trim();
-  const name = document.getElementById('name').value.trim();
-  const mobile = document.getElementById('mobile').value.trim();
-  const mode = document.getElementById('mode').value;
-  const address = document.getElementById('address').value.trim();
-  const people = document.getElementById('people').value.trim();
-
-  if (!gender || gender.length < 2) {
-    alert('Please enter your gender (minimum 2 characters).');
-    return;
-  }
-  if (!name || name.length < 2) {
-    alert('Please enter your name (minimum 2 characters).');
-    return;
-  }
-  if (!mobile || (mobile.length < 10 && !mobile.startsWith("+"))) {
-    alert('Please enter a valid mobile number.');
-    return;
-  }
-  if (!mode || (mode === "Offline" && !address)) {
-    alert('Please select mode and address properly.');
-    return;
-  }
-  if (!people) {
-    alert('Please enter number of people.');
-    return;
-  }
-
-  document.getElementById('page1').style.display = "none";
-  document.getElementById('page2').style.display = "block";
-});
-
-// SUBMIT Button (Page 2)
-document.getElementById('enquiryForm').addEventListener('submit', function(event) {
-  event.preventDefault();
-
-  const email = document.getElementById('email').value.trim();
-  const dob = document.getElementById('dob').value;
-
-  if (!validateEmail(email)) {
-    alert('Please enter a valid email address.');
-    return;
-  }
-  if (!dob) {
-    alert('Please select your date of birth.');
-    return;
-  }
-
-  document.getElementById('enquiryForm').style.display = "none";
-  document.getElementById('message').style.display = "block";
+    document.getElementById('enquiryForm').style.display = "none";
+    document.getElementById('thankYouMessage').style.display = "block";
 });
